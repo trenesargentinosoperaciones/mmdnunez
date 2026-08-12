@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mesa comando digital Nuñez</title>
+
+<style>
+    body { background-color: #000; color: white; font-family: Arial; margin: 0; overflow-x: auto; user-select: none; }
+    .map-container { position: relative; width: 11500px; height: 2350px; background-color: #0b0c10; }
+
+    /* --- ESTILO SEÑALES --- */
+    .senal-unificada { position: absolute; display: flex; flex-direction: column; align-items: center; z-index: 150; }
+    .nombre-s-abajo { flex-direction: column-reverse; }
+    .s-nombre-real { color: #FFFF00; font-size: 10px; font-weight: bold; margin-bottom: -2px; text-shadow: 1px 1px 2px #000; }
+    .s-grafico-real { display: flex; align-items: center; justify-content: center; }
+    .t-girada { font-size: 35px; font-weight: bold; transform: rotate(-90deg); margin-right: -10px; line-height: 1; transition: 0.2s; }
+    .circulo-led { width: 22px; height: 22px; border-radius: 50%; background-color: #200; transition: 0.2s; } 
+    .curva-led {
+        width: 14px;
+        height: 14px;
+        background-color: #B8F5B8;
+        transition: 0.2s;
+        border-radius: 0 14px 0 0; 
+        margin-top: -1px;
+        transform: rotate(-270deg);
+    }
+
+    /* --- SEÑALES ENANAS --- */
+    .enana .t-girada { font-size: 22px !important; margin-right: -6px !important; }
+    .enana .circulo-led { width: 14px !important; height: 14px !important; }
+    .enana .curva-led { width: 14px !important; height: 14px !important; }
+    .enana .s-nombre-real { font-size: 10px !important; }
+
+    .sentido-izq .s-grafico-real { flex-direction: row-reverse; }
+    .sentido-izq .t-girada { transform: rotate(90deg); margin-right: 0; margin-left: -10px; }
+
+    /* ESTADOS DE COLORES SEÑALES */
+    .f-rojo .t-girada { color: #FF0000 !important; }
+    .f-rojo .circulo-led { background-color: #FF0000 !important; box-shadow: 0 0 15px #FF0000; }
+    .f-rojo .curva-led { background-color: #FF0000 !important; box-shadow: 0 0 15px #FF0000; }
+
+    .f-verde .t-girada { color: #00FF00 !important; }
+    .f-verde .circulo-led { background-color: #00FF00 !important; box-shadow: 0 0 15px #00FF00; }
+    .f-verde .curva-led { background-color: #00FF00 !important; box-shadow: 0 0 15px #00FF00; }
+
+    .f-maniobra .t-girada { color: #FFFF00 !important; }
+    .f-maniobra .circulo-led { background-color: #FFFF00 !important; box-shadow: 0 0 15px #FFFF00; }
+    .f-maniobra .curva-led { background-color: #FFFF00 !important; box-shadow: 0 0 15px #FFFF00; }
+
+    /* --- ESTILO VÍAS --- */
+    .via { 
+        position: absolute; 
+        height: 10px; 
+        background-color: #333; 
+        border: 1px solid #555; 
+        z-index: 30; 
+        box-sizing: border-box; 
+        transition: none !important; 
+    }
+
+    .nombre-via-label {
+        position: absolute !important;
+        color: #FFFF00 !important;
+        font-weight: bold !important;
+        font-size: 11px !important;
+        text-transform: uppercase;
+        white-space: nowrap;
+        background: rgba(0,0,0,0.6);
+        padding: 1px 4px;
+        border-radius: 2px;
+        pointer-events: none;
+        z-index: 50 !important;
+    }      
+
+    .via-fantasma { background-color: #7F7F7F !important; border: none !important; color: transparent !important; z-index: 25 !important; box-shadow: none !important; }
+    .libre { background-color: #00FF00 !important; border-color: #00FF00 !important; }
+    .libreconI { background-color: #00FF00 !important; border-color: #00FF00 !important; }
+    .ocupado { background-color: #FF0000 !important; border-color: #FF0000 !important; }
+    .libresinI { background-color: #FFFF00 !important; border-color: #FFFF00 !important; }
+    .maniobra { background-color: #00A2E8 !important; border-color: #00A2E8 !important; }
+    .libredeslizamiento { background-color: #A349A4 !important; border-color: #A349A4 !important; }
+    .diagonal { transform-origin: 0% 50%; }
+
+
+   
+    /* --- PASOS A NIVEL SIEMENS EN L --- */
+    .pan-rect { position: absolute; width: 20px; height: 400px; background-color: #444; z-index: 5; }
+    .pan-etiqueta { position: absolute; background-color: black; color: white; border: 1px solid white; padding: 2px 6px; font-size: 11px; transform: rotate(-90deg); transform-origin: left bottom; z-index: 25; }
+    .ind-pan-container { position: absolute; width: 30px; height: 30px; z-index: 30; cursor: pointer; }
+    .ind-alto { position: absolute; left: 0; bottom: 10px; width: 10px; height: 25px; background-color: #331100; border: 1px solid #000; }
+    .ind-alto.active { background-color: #FF0000; box-shadow: 0 0 10px #FF0; }
+    .ind-bajo { position: absolute; left: 0; bottom: 0; width: 30px; height: 10px; background-color: #330000; border: 1px solid #000; }
+    .ind-bajo.active { background-color: #FFFF00; box-shadow: 0 0 10px #F00; }
+    .pan-amarillo-on { background-color: #FF0000 !important; box-shadow: 0 0 15px #FF0000 !important; border-color: #FF0000 !important; }
+    .pan-rojo-on { background-color: #FFFF00 !important; box-shadow: 0 0 15px #FFFF00 !important; border-color: #FFFF00 !important; }
+    .indicacion { background: #b50b6e; border: 2px solid white; color: white; padding: 2px 10px; font-weight: bold; position: absolute; font-size: 13px; z-index: 20; letter-spacing: 1px;box-shadow: 4px 4px 0px #000; }
+
+
+    /* --- PANELES CONTROLES SUPERIORES --- */
+    .status-container-nuz { position: absolute; top: 520px; left: 1450px; background-color: #0056b3; padding: 12px 18px; border-radius: 4px; border: 2px solid white; display: flex; flex-direction: column; gap: 12px; z-index: 100; box-shadow: 5px 5px 15px rgba(0,0,0,0.7); font-size: 15px; }
+    .status-row { display: flex; align-items: center; gap: 15px; color: white; }
+    .nombre-grupo { font-weight: bold; width: 85px; border-right: 1px solid rgba(255,255,255,0.3); }
+    .led-rd { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; background: #222; display: inline-block; }
+    .l-white { background: #fff !important; box-shadow: 0 0 10px #fff; }
+    .l-red { background: #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
+
+    .cd-via-panelN { position: absolute; top: 655px; left: 1795px; background-color: #41B883; border: 1px solid #777; width: 140px; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; z-index: 50; }
+    .cd-via-panelR { position: absolute; top: 677px; left: 2360px; background-color: #41B883; border: 1px solid #777; width: 120px; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; z-index: 50; }
+    
+    .led-10mm { width: 15px; height: 15px; border-radius: 50%; background-color: #1a1a1a; border: 2px solid #333; display: inline-block; margin-right: 5px; transition: 0.2s; }
+    .l-on-w { background-color: #ffffff !important; box-shadow: 0 0 15px #fff !important; }
+    .l-on-b { background-color: #0088ff !important; box-shadow: 0 0 15px #0088ff !important; }
+    
+    .estacion { border: 2px solid white; background: black; padding: 5px 20px; font-weight: bold; position: absolute; font-size: 22px; z-index: 20; }
+    .anden { position: absolute; height: 35px; background-color: #A9A9A9; border: 1px solid #777777; z-index: 10; opacity: 0.9; }
+    .nombre-cambio { background-color: #0056b3; border: 1px solid white; color: white; padding: 1px 4px; font-size: 10px; font-weight: bold; border-radius: 2px; z-index: 50; position: absolute; cursor: pointer; }
+    
+    .led-enclav { width: 12px; height: 12px; border-radius: 50%; background-color: #ffffff; border: 1px solid #777; display: inline-block; transition: 0.3s; cursor: pointer; }
+    .enclav-cambio { border-radius: 2px; width: 22px; z-index: 9999 !important; position: relative; }
+    .enclav-senal { border-radius: 50%; }
+    .label-plataforma { position: absolute; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; letter-spacing: 1px; pointer-events: none; z-index: 15; }
+
+    .status-box-nun {
+        position: absolute; top: 450px; left: 1450px; width: 260px;
+        background-color: #FFD700; border: 2px solid #000;
+        border-radius: 4px; padding: 6px;
+        display: flex; flex-direction: column; align-items: center; gap: 5px;
+        z-index: 100; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+    .status-header-text { font-weight: bold; font-size: 20px; color: WHITE; text-transform: uppercase; }
+    .status-content { display: flex; align-items: center; gap: 15px; }
+    .status-label { font-size: 15px; font-weight: bold; color: RED; }
+    .led-status { width: 15px; height: 15px; border-radius: 50%; background-color: #555; border: 1px solid black; }
+
+    .led-on { background-color: #00FF00; box-shadow: 0 0 5px #00FF00; }
+    .led-off { background-color: #FF0000; box-shadow: 0 0 5px #FF0000; }
+
+    .linea-limite { position: absolute; z-index: 999; border-color: #fff; border-style: dashed; }
+    .linea-v { border-left-width: 2px; border-top: 0; border-bottom: 0; border-right: 0; }
+    .linea-h { border-top-width: 2px; border-left: 0; border-right: 0; border-bottom: 0; }
+
+    #AW1011.l-red, #AW1215.l-red, #AW124123.l-red { background-color: red !important; box-shadow: 0 0 10px red !important; }
+
+    /* --- MENÚS EMERGENTES SIEMENS RAIL9000 UNIFICADOS --- */
+    .menu-siemens {
+        display: none;
+        position: absolute;
+        background: #d4d0c8;
+        border: 2px solid #0056b3;
+        box-shadow: 3px 3px 10px rgba(0,0,0,0.8);
+        z-index: 10000;
+        width: 215px;
+        font-family: Arial, sans-serif;
+        font-size: 11px;
+        color: #000;
+    }
+    .menu-siemens-header {
+        background: #0056b3;
+        color: #00FFFF;
+        font-weight: bold;
+        padding: 4px 6px;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .menu-siemens-item {
+        padding: 6px 8px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #e4e0d8;
+        font-weight: bold;
+        border-bottom: 1px solid #bcbbb6;
+    }
+    .menu-siemens-item:hover {
+        background: #0056b3;
+        color: #ffffff;
+    }
+
+    /* --- CARTEL CHICO DE ADVERTENCIA BLOQUEO --- */
+    .cartel-advertencia-cd {
+        display: none;
+        position: absolute;
+        background: #b30000;
+        color: #ffffff;
+        border: 1px solid #ffffff;
+        box-shadow: 0 0 10px rgba(255,0,0,0.8);
+        padding: 5px 8px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 20000;
+        white-space: nowrap;
+        pointer-events: none;
+        text-align: center;
+    }
+    .menu-siemens-item.deshabilitado {
+        color: #999999 !important;
+        background: #eae6df !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+</style>
+</head>
+<body>
+
+<div class="linea-limite linea-v" style="top: 820px; left: 1550px; height: 85px;"></div>
+<div class="linea-limite linea-h" style="top: 905px; left: 1445px; width: 105px;"></div>
+<div class="linea-limite linea-v" style="top: 905px; left: 1445px; height: 200px;"></div>
+
+<div class="linea-limite linea-v" style="top: 820px; left: 2200px; height: 85px;"></div>
+<div class="linea-limite linea-h" style="top: 905px; left: 2130px; width: 70px;"></div>
+<div class="linea-limite linea-v" style="top: 905px; left: 2130px; height: 200px;"></div>
+
+<!-- CARTEL CHICO DE ADVERTENCIA -->
+<div id="cartelBloqueoCD" class="cartel-advertencia-cd">
+    🛑 PROHIBIDO: CAMBIO ENCLAVADO
+</div>
+
+<div class="map-container">
+    <div class="status-box-nun">
+        <div class="status-header-text">NUÑEZ</div>
+        <div class="status-content">
+            <span id="indicadorNunez" class="led-status"></span>
+            <span class="status-label">EN VIVO</span>
+        </div>
+    </div>
+
+    <!-- MANDO Y MONITOREO DE AGUJAS NÚÑEZ -->
+    <div class="status-container-nuz" id="panelMandoNunez">
+        <div class="status-row"><div class="nombre-grupo">W10/11</div><div id="LW1011P" class="led-rd"></div><b>+</b><div id="LW1011M" class="led-rd"></div><b>-</b><div id="AW1011" class="led-rd"></div><b>A</b></div>
+        <div class="status-row"><div class="nombre-grupo">W12/15</div><div id="LW1215P" class="led-rd"></div><b>+</b><div id="LW1215M" class="led-rd"></div><b>-</b><div id="AW1215" class="led-rd"></div><b>A</b></div>
+        <div class="status-row"><div class="nombre-grupo">W124/123</div><div id="LW124123P" class="led-rd"></div><b>+</b><div id="LW124123M" class="led-rd"></div><b>-</b><div id="AW124123" class="led-rd"></div><b>A</b></div>
+    </div>
+
+    <!-- PANELES CIRCULACIÓN DIRECTA -->
+    <div class="cd-via-panelN">
+        <div onclick="abrirMenuCD(event, 'CDV1', 1795, 665)" style="cursor: pointer;"><div id="led-CDV1_N" class="led-10mm"></div>CDV1</div>
+        <div onclick="abrirMenuCD(event, 'CDV2', 1865, 665)" style="cursor: pointer;"><div id="led-CDV2_N" class="led-10mm"></div>CDV2</div>
+        <div><div id="led-RF_N" class="led-10mm"></div>R.F</div>
+        <div><div id="led-RU_N" class="led-10mm"></div>R.U</div>
+    </div>
+
+    <div class="cd-via-panelR">
+        <div><div id="led-RF_R" class="led-10mm"></div>R.F</div>
+        <div><div id="led-RU_R" class="led-10mm"></div>R.U</div>
+    </div>
+
+    <div class="estacion" style="top: 728px; left: 1805px;">NUÑEZ</div>
+    <div class="estacion" style="top: 728px; left: 2335px;">RIVADAVIA</div>
+
+    <div class="anden" style="top: 785px; left: 1800px; width: 130px;"></div><div class="anden" style="top: 990px; left: 1800px; width: 130px;"></div>
+    <div class="anden" style="top: 785px; left: 2370px; width: 120px;"></div><div class="anden" style="top: 990px; left: 2370px; width: 120px;"></div>
+
+    <div class="label-plataforma" style="top: 785px; left: 1780px; width: 170px; height: 35px;">PLATAFORMA 1</div>
+    <div class="label-plataforma" style="top: 785px; left: 2345px; width: 170px; height: 35px;">PLATAFORMA 1</div>
+    <div class="label-plataforma" style="top: 990px; left: 1780px; width: 170px; height: 35px;">PLATAFORMA 2</div>
+    <div class="label-plataforma" style="top: 990px; left: 2345px; width: 170px; height: 35px;">PLATAFORMA 2</div>
+
+    <!-- MENÚS EMERGENTES SIEMENS -->
+    <div id="menuSiemensAguja" class="menu-siemens">
+        <div id="headerAgujaSiemens" class="menu-siemens-header">AGUJA</div>
+        <div class="menu-siemens-item" onclick="confirmarMoverAguja()">Mover aguja <span>▶</span></div>
+    </div>
+
+    <div id="menuSiemensSenal" class="menu-siemens">
+        <div id="headerSenalSiemens" class="menu-siemens-header">SEÑAL</div>
+        <div id="contenedorOpcionesSenal"></div>
+    </div>
+
+    <div id="menuSiemensCD" class="menu-siemens">
+        <div id="headerCDSiemens" class="menu-siemens-header">CIRCULACIÓN DIRECTA</div>
+        <div id="contenedorOpcionesCD"></div>
+    </div>
+
+    <div id="menuSiemensManiobra" class="menu-siemens">
+        <div id="headerManiobraSiemens" class="menu-siemens-header">MANIOBRA</div>
+        <div id="contenedorOpcionesManiobra"></div>
+    </div>
+
+    <!-- VÍAS Y CIRCUITOS NÚÑEZ -->
+    <div id="c115" class="via v-arriba" data-nombre="CDV115" style="top: 850px; left: 1450px; width: 95px;"></div>
+    <div id="w11plus" class="via v-arriba" data-nombre="" style="top: 850px; left: 1550px; width: 132px;"></div>
+    <div id="w11pm" class="via v-arriba" data-nombre="11" style="top: 850px; left: 1682px; width: 113px;"></div>
+    <div id="w11minus" class="via diagonal via-fantasma v-arriba" data-nombre="" style="top: 902px; left: 1634px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="ca-Nuñ" class="via v-arriba" data-nombre="CDVA-NUN" style="top: 850px; left: 1800px; width: 165px;"></div>
+    <div id="w15plus" class="via v-arriba" data-nombre="" style="top: 850px; left: 1970px; width: 100px;"></div>
+    <div id="w15pm" class="via v-arriba" data-nombre="15" style="top: 850px; left: 2070px; width: 75px;"></div>
+    <div id="w15minus" class="via diagonal via-fantasma v-arriba" data-nombre="" style="top: 902px; left: 2022px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="cb-Nuñ" class="via v-arriba" data-nombre="CDVB-NUN" style="top: 850px; left: 2150px; width: 45px;"></div>
+    <div id="c121" class="via v-arriba" data-nombre="CDV121" style="top: 850px; left: 2200px; width: 85px;"></div>
+    <div id="w123plus" class="via v-arriba" data-nombre="" style="top: 850px; left: 2290px; width: 75px;"></div>
+    <div id="w123pm" class="via v-arriba" data-nombre="123" style="top: 850px; left: 2365px; width: 170px;"></div>
+    <div id="w123minus" class="via diagonal via-fantasma v-arriba" data-nombre="" style="top: 902px; left: 2318px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="c125" class="via v-arriba" data-nombre="CDV125" style="top: 850px; left: 2540px; width: 145px;"></div>
+
+    <div id="cy-Nuñ" class="via v-abajo" data-nombre="CDVY-NUN" style="top: 950px; left: 1450px; width: 95px;"></div>
+    <div id="w10pm" class="via v-abajo" data-nombre="10" style="top: 950px; left: 1550px; width: 38px;"></div>
+    <div id="w10plus" class="via v-abajo" data-nombre="" style="top: 950px; left: 1588px; width: 137px;"></div>
+    <div id="w10minus" class="via diagonal via-fantasma v-abajo" data-nombre="" style="top: 944px; left: 1592px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="cz-Nuñ" class="via v-abajo" data-nombre="CDVZ-NUN" style="top: 950px; left: 1730px; width: 195px;"></div>
+    <div id="w12pm" class="via v-abajo" data-nombre="12" style="top: 950px; left: 1930px; width: 45px;"></div>
+    <div id="w12plus" class="via v-abajo" data-nombre="" style="top: 950px; left: 1975px; width: 150px;"></div>
+    <div id="w12minus" class="via diagonal via-fantasma v-abajo" data-nombre="" style="top: 944px; left: 1980px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="c122" class="via v-abajo" data-nombre="CDV122" style="top: 950px; left: 2130px; width: 95px;"></div>
+    <div id="w124pm" class="via v-abajo" data-nombre="124" style="top: 950px; left: 2230px; width: 40px;"></div>
+    <div id="w124plus" class="via v-abajo" data-nombre="" style="top: 950px; left: 2270px; width: 85px;"></div>
+    <div id="w124minus" class="via diagonal via-fantasma v-abajo" data-nombre="" style="top: 944px; left: 2275px; width: 65px; height: 10px; clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 15% 100%); transform: rotate(-45deg);"></div>
+    <div id="c126" class="via v-abajo" data-nombre="CDV126" style="top: 950px; left: 2360px; width: 185px;"></div>
+    <div id="c128" class="via v-abajo" data-nombre="CDV128" style="top: 950px; left: 2550px; width: 145px;"></div>
+    <div id="c130" class="via v-abajo" data-nombre="CDV130" style="top: 950px; left: 2700px; width: 100px;"></div>
+
+    <!-- SEÑALES PRINCIPALES NÚÑEZ INTERACTIVAS -->
+    <div id="s115_base" class="senal-unificada f-rojo" style="top: 780px; left: 1450px;"><div class="s-nombre-real">115</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sA-NUN_base" onclick="abrirMenuSenal(event, 'A-NUN', 'CDV1', 1550, 780)" class="senal-unificada f-rojo" style="top: 780px; left: 1550px; cursor: pointer;"><div class="s-nombre-real">A-NUN</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sB-NUN_base" onclick="abrirMenuSenal(event, 'B-NUN', 'CDV1', 1970, 780)" class="senal-unificada f-rojo" style="top: 780px; left: 1970px; cursor: pointer;"><div class="s-nombre-real">B-NUN</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s121_base" class="senal-unificada f-rojo" style="top: 780px; left: 2200px;"><div class="s-nombre-real">121</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sA-RIV_base" onclick="abrirMenuSenal(event, 'A-RIV', 'CDV1', 2290, 780)" class="senal-unificada f-rojo" style="top: 780px; left: 2290px; cursor: pointer;"><div class="s-nombre-real">A-RIV</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s125_base" class="senal-unificada f-rojo" style="top: 780px; left: 2540px;"><div class="s-nombre-real">125</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s127_base" class="senal-unificada f-rojo" style="top: 780px; left: 2690px;"><div class="s-nombre-real">127</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+
+    <div id="s116_base" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 1410px;"><div class="s-nombre-real">116</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sY-NUN_base" onclick="abrirMenuSenal(event, 'Y-NUN', 'CDV2', 1690, 985)" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 1690px; cursor: pointer;"><div class="s-nombre-real">Y-NUN</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sZ-NUN_base" onclick="abrirMenuSenal(event, 'Z-NUN', 'CDV2', 2095, 985)" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 2095px; cursor: pointer;"><div class="s-nombre-real">Z-NUN</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s122_base" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 2195px;"><div class="s-nombre-real">122</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="sZ-RIV_base" onclick="abrirMenuSenal(event, 'Z-RIV', 'CDV2', 2322, 985)" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 2322px; cursor: pointer;"><div class="s-nombre-real">Z-RIV</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s126_base" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 2515px;"><div class="s-nombre-real">126</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+    <div id="s128_base" class="senal-unificada f-rojo sentido-izq nombre-s-abajo" style="top: 985px; left: 2665px;"><div class="s-nombre-real">128</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="circulo-led"></div></div></div>
+
+    <!-- SEÑALES ENANAS DE MANIOBRA INTERACTIVAS -->
+    <div id="s12a_base" onclick="abrirMenuManiobra(event, '12A', 1925, 915)" class="senal-unificada f-rojo enana" style="top: 915px; left: 1925px; cursor: pointer;"><div class="s-nombre-real">12A</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="curva-led"></div></div></div>
+    <div id="s10a_base" onclick="abrirMenuManiobra(event, '10A', 1550, 915)" class="senal-unificada f-rojo enana" style="top: 915px; left: 1550px; cursor: pointer;"><div class="s-nombre-real">10A</div><div class="s-grafico-real"><div class="t-girada">T</div><div class="curva-led"></div></div></div>
+    <div id="s17a_base" onclick="abrirMenuManiobra(event, '17A', 2125, 865)" class="senal-unificada f-rojo nombre-s-abajo enana" style="top: 865px; left: 2125px; cursor: pointer;"><div class="s-nombre-real">17A</div><div class="s-grafico-real" style="transform: scaleX(-1); display: flex; justify-content: center;"><div class="t-girada">T</div><div class="curva-led"></div></div></div>
+    <div id="s13a_base" onclick="abrirMenuManiobra(event, '13A', 1775, 865)" class="senal-unificada f-rojo nombre-s-abajo enana" style="top: 865px; left: 1775px; cursor: pointer;"><div class="s-nombre-real">13A</div><div class="s-grafico-real" style="transform: scaleX(-1); display: flex; justify-content: center;"><div class="t-girada">T</div><div class="curva-led"></div></div></div>
+
+    <!-- CAMBIOS INTERACTIVOS -->
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W11', 1680, 827)" style="top: 827px; left: 1680px;">w11</div>
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W10', 1620, 970)" style="top: 970px; left: 1620px;">w10</div>
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W15', 2050, 827)" style="top: 827px; left: 2050px;">w15</div>
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W12', 1980, 970)" style="top: 970px; left: 1980px;">w12</div>
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W123', 2380, 827)" style="top: 827px; left: 2380px;">w123</div>
+    <div class="nombre-cambio" onclick="abrirMenuAguja(event, 'W124', 2290, 970)" style="top: 970px; left: 2290px;">w124</div>
+
+    <div style="position: absolute; top: 848px; left: 1673px; text-align: center;"><div id="EW11" onclick="abrirMenuAguja(event, 'W11', 1673, 848)" class="led-enclav enclav-cambio"></div></div>
+    <div style="position: absolute; top: 947px; left: 1575px; text-align: center;"><div id="EW10" onclick="abrirMenuAguja(event, 'W10', 1575, 947)" class="led-enclav enclav-cambio"></div></div>
+    <div style="position: absolute; top: 848px; left: 2060px; text-align: center;"><div id="EW15" onclick="abrirMenuAguja(event, 'W15', 2060, 848)" class="led-enclav enclav-cambio"></div></div>
+    <div style="position: absolute; top: 947px; left: 1962px; text-align: center;"><div id="EW12" onclick="abrirMenuAguja(event, 'W12', 1962, 947)" class="led-enclav enclav-cambio"></div></div>
+    <div style="position: absolute; top: 848px; left: 2355px; text-align: center;"><div id="EW123" onclick="abrirMenuAguja(event, 'W123', 2355, 848)" class="led-enclav enclav-cambio"></div></div>
+    <div style="position: absolute; top: 947px; left: 2262px; text-align: center;"><div id="EW124" onclick="abrirMenuAguja(event, 'W124', 2262, 947)" class="led-enclav enclav-cambio"></div></div>
+
+    <div style="position: absolute; top: 797px; left: 1530px; text-align: center;"><div id="ESAN" class="led-enclav enclav-senal"></div></div>
+    <div style="position: absolute; top: 797px; left: 1950px; text-align: center;"><div id="ESBN" class="led-enclav enclav-senal"></div></div>
+    <div style="position: absolute; top: 995px; left: 1730px; text-align: center;"><div id="ESYN" class="led-enclav enclav-senal"></div></div>
+    <div style="position: absolute; top: 995px; left: 2135px; text-align: center;"><div id="ESZN" class="led-enclav enclav-senal"></div></div>
+
+<!-- PASOS A NIVEL -->
+<div class="pan-etiqueta" style="top: 730px; left: 2270px;">RAMALLO</div><div class="pan-rect" style="top: 650px; left: 2250px;"></div>
+<div class="ind-pan-container" style="top: 1060px; left: 2250px;"><div id="B_RAM_A" class="ind-alto"></div><div id="B_RAM_B" class="ind-bajo"></div></div>
+
+<div class="pan-etiqueta" style="top: 730px; left: 2525px;">ZUFRIATEGUI</div><div class="pan-rect" style="top: 650px; left: 2505px;"></div>
+<div class="ind-pan-container" style="top: 1060px; left: 2505px;"><div id="B_ZUF_A" class="ind-alto"></div><div id="B_ZUF_B" class="ind-bajo"></div></div>
+
+<div class="pan-etiqueta" style="top: 730px; left: 2680px;">LAPRIDA</div><div class="pan-rect" style="top: 650px; left: 2660px;"></div>
+<div class="ind-pan-container" style="top: 1060px; left: 2660px;"><div id="B_LAP_A" class="ind-alto"></div><div id="B_LAP_B" class="ind-bajo"></div></div>
+
+</div>
+
+<!-- FIREBASE SCRIPTS Y LÓGICA -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+    window.addEventListener('load', function() {
+        window.scrollTo(1350, 400);
+        anclarNombres();
+    });
+
+    var firebaseConfig = {
+        apiKey: "AIzaSyC2V...", 
+        authDomain: "mi-ctc-ferroviario.firebaseapp.com",
+        databaseURL: "https://mi-ctc-ferroviario-default-rtdb.firebaseio.com",
+        projectId: "mi-ctc-ferroviario",
+        storageBucket: "mi-ctc-ferroviario.appspot.com",
+        messagingSenderId: "367332213795",
+        appId: "1:367332213795:web:53177699e19cc174542289"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.database();
+
+    const TABLA_CAMBIOS = {
+        "W10": { pm: 'w10pm', plus: 'w10plus', minus: 'w10minus' },
+        "W11": { pm: 'w11pm', plus: 'w11plus', minus: 'w11minus' },
+        "W12": { pm: 'w12pm', plus: 'w12plus', minus: 'w12minus' },
+        "W15": { pm: 'w15pm', plus: 'w15plus', minus: 'w15minus' },
+        "W123": { pm: 'w123pm', plus: 'w123plus', minus: 'w123minus' },
+        "W124": { pm: 'w124pm', plus: 'w124plus', minus: 'w124minus' }
+    };
+
+    var tic = true;
+    var curW10 = "1", curW11 = "1", curW12 = "1", curW15 = "1", curW123 = "1", curW124 = "1";
+    var flagAveria_Nuz1011 = 0, flagAveria_Nuz1215 = 0, flagAveria_Nuz124123 = 0;
+    var w10_estado = 0, w11_estado = 0, w12_estado = 0, w15_estado = 0, w123_estado = 0, w124_estado = 0;
+
+    var estadoCDV1 = 0, estadoCDV2 = 0;
+    var cdvSeleccionado = null, senalSeleccionada = null, viaAsociadaSeleccionada = null, agujaSeleccionada = null, enanaSeleccionada = null;
+    var estadoViasNunez = {}, estadoSenalesNunez = {}, estadoEnclavamientosNunez = {};
+    var timerCartelCD = null;
+
+    // FUNCIÓN AUXILIAR: Verifica si hay alguna ruta de maniobra armada (= 2)
+    function hayManiobraActiva() {
+        var activa = false;
+        ['10A', '13A', '17A', '12A'].forEach(function(enana) {
+            var valEnana = Number(estadoSenalesNunez["s" + enana] || estadoSenalesNunez[enana] || estadoSenalesNunez["s" + enana.toLowerCase()] || 0);
+            if (valEnana === 2) {
+                activa = true;
+            }
+        });
+        return activa;
+    }
+
+    function procesarCambioGeneral(id, conf, pos, estadoVia, averia, tic) {
+        const pm = document.getElementById(conf.pm);
+        const plus = document.getElementById(conf.plus);
+        const minus = document.getElementById(conf.minus);
+        if (!pm || !plus || !minus) return;
+
+        const estadosCss = { 
+            0: 'libreconI', 1: 'ocupado', 2: 'libresinI', 4: 'maniobra', 5: 'libredeslizamiento'
+        };
+        const colorEstado = estadosCss[estadoVia] || 'libreconI';
+        const parpadeo = (averia && tic);
+
+        [pm, plus, minus].forEach(el => el.classList.remove('via-fantasma', 'ocupado', 'libreconI', 'libresinI', 'maniobra', 'libredeslizamiento'));
+
+        if (pos == 1 || pos == "1") {
+            minus.classList.add('via-fantasma');
+            if (parpadeo) {
+                [pm, plus].forEach(el => el.classList.add('via-fantasma'));
+            } else {
+                [pm, plus].forEach(el => el.classList.add(colorEstado));
+            }
+        } else {
+            plus.classList.add('via-fantasma');
+            if (parpadeo) {
+                [pm, minus].forEach(el => el.classList.add('via-fantasma'));
+            } else {
+                [pm, minus].forEach(el => el.classList.add(colorEstado));
+            }
+        }
+    }
+
+    setInterval(function() {
+        tic = !tic;
+        procesarCambioGeneral("W10", TABLA_CAMBIOS["W10"], curW10, w10_estado, flagAveria_Nuz1011 == 1, tic);
+        procesarCambioGeneral("W11", TABLA_CAMBIOS["W11"], curW11, w11_estado, flagAveria_Nuz1011 == 1, tic);
+        procesarCambioGeneral("W12", TABLA_CAMBIOS["W12"], curW12, w12_estado, flagAveria_Nuz1215 == 1, tic);
+        procesarCambioGeneral("W15", TABLA_CAMBIOS["W15"], curW15, w15_estado, flagAveria_Nuz1215 == 1, tic);
+        procesarCambioGeneral("W123", TABLA_CAMBIOS["W123"], curW123, w123_estado, flagAveria_Nuz124123 == 1, tic);
+        procesarCambioGeneral("W124", TABLA_CAMBIOS["W124"], curW124, w124_estado, flagAveria_Nuz124123 == 1, tic);
+
+      Object.keys(panesGeneral).forEach(function(nombrePan) {
+        actualizarPAN(nombrePan);
+    });
+
+
+        pW();
+    }, 500);
+
+function actualizarPAN(nombrePan) {
+    var p = panesGeneral[nombrePan];  
+    if (!p) return;
+    
+    var elAlto = document.getElementById(p.idAlto);
+    var elBajo = document.getElementById(p.idBajo);
+    if (!elAlto || !elBajo) return;
+
+    elAlto.className = "ind-alto";
+    elBajo.className = "ind-bajo";
+
+    var mostrarLuz = (Number(p.av) === 0) ? tic : true;
+    if (!mostrarLuz) return;
+
+    if (Number(p.pos) === 0) {
+        elAlto.classList.add('pan-amarillo-on');
+    } else if (Number(p.pos) === 1) {
+        elBajo.classList.add('pan-rojo-on');
+    }
+}
+
+
+
+    function pW() {
+        var lp1011 = document.getElementById('LW1011P'), lm1011 = document.getElementById('LW1011M'), la1011 = document.getElementById('AW1011');
+        var lp1215 = document.getElementById('LW1215P'), lm1215 = document.getElementById('LW1215M'), la1215 = document.getElementById('AW1215');
+        var lp124 = document.getElementById('LW124123P'), lm124 = document.getElementById('LW124123M'), la124 = document.getElementById('AW124123');
+
+        if(la1011) la1011.className = flagAveria_Nuz1011 == 1 ? "led-rd l-red" : "led-rd";
+        if(la1215) la1215.className = flagAveria_Nuz1215 == 1 ? "led-rd l-red" : "led-rd";
+        if(la124) la124.className = flagAveria_Nuz124123 == 1 ? "led-rd l-red" : "led-rd";
+
+        if(lp1011) lp1011.className = (curW10 == "1" && curW11 == "1") ? "led-rd l-white" : "led-rd";
+        if(lm1011) lm1011.className = (curW10 != "1" || curW11 != "1") ? "led-rd l-white" : "led-rd";
+        
+        if(lp1215) lp1215.className = (curW12 == "1" && curW15 == "1") ? "led-rd l-white" : "led-rd";
+        if(lm1215) lm1215.className = (curW12 != "1" || curW15 != "1") ? "led-rd l-white" : "led-rd";
+
+        if(lp124) lp124.className = (curW123 == "1" && curW124 == "1") ? "led-rd l-white" : "led-rd";
+        if(lm124) lm124.className = (curW123 != "1" || curW124 != "1") ? "led-rd l-white" : "led-rd";
+    }
+
+    function estaCambioEnclavado() {
+        if (estadoCDV1 === 1 || estadoCDV2 === 1) return true;
+        if (estadoEnclavamientosNunez["EW10"] == 1 || estadoEnclavamientosNunez["EW11"] == 1 || estadoEnclavamientosNunez["EW12"] == 1 || estadoEnclavamientosNunez["EW15"] == 1) return true;
+        return false;
+    }
+
+    function procesarEnclavamientosCambios(datosEnclav) {
+        if (!datosEnclav) datosEnclav = {};
+        estadoEnclavamientosNunez = datosEnclav;
+
+        var parejasCambios = [
+            { ids: ["EW10", "EW11"], claves: ["EW10", "ew10", "EW11", "ew11", "W10", "W11"] },
+            { ids: ["EW12", "EW15"], claves: ["EW12", "ew12", "EW15", "ew15", "W12", "W15"] },
+            { ids: ["EW124", "EW123"], claves: ["EW124", "ew124", "EW123", "ew123", "W124", "W123"] }
+        ];
+
+        parejasCambios.forEach(function(pareja) {
+            var enclavado = false;
+            pareja.claves.forEach(function(clave) {
+                if (datosEnclav[clave] == 1 || datosEnclav[clave] == "1") enclavado = true;
+            });
+            pareja.ids.forEach(function(idHtml) {
+                var el = document.getElementById(idHtml);
+                if (el) {
+                    el.style.backgroundColor = enclavado ? "#0000FF" : "#ffffff";
+                    el.style.borderColor = enclavado ? "#0000FF" : "#ffffff";
+                    el.style.boxShadow = enclavado ? "0 0 14px #0000FF" : "none";
+                }
+            });
+        });
+    }
+
+    function procesarDatosTrafico(datosTrafico, sufijoPanel) {
+        if (!datosTrafico) return;
+        if (sufijoPanel === "N") {
+            if (datosTrafico["CDV1"] !== undefined) estadoCDV1 = Number(datosTrafico["CDV1"]);
+            if (datosTrafico["CDV2"] !== undefined) estadoCDV2 = Number(datosTrafico["CDV2"]);
+        }
+
+        var mapeoLeds = { "CDV1": "led-CDV1_" + sufijoPanel, "CDV2": "led-CDV2_" + sufijoPanel, "RF": "led-RF_" + sufijoPanel, "RU": "led-RU_" + sufijoPanel };
+        Object.keys(mapeoLeds).forEach(function(claveKey) {
+            var ledEl = document.getElementById(mapeoLeds[claveKey]);
+            if (ledEl) {
+                var valor = datosTrafico[claveKey] !== undefined ? datosTrafico[claveKey] : datosTrafico[claveKey.toLowerCase()];
+                if (valor === 1 || valor === "1" || valor === true) {
+                    ledEl.className = (claveKey === "CDV1" || claveKey === "CDV2") ? "led-10mm l-on-w" : "led-10mm l-on-b";
+                } else {
+                    ledEl.className = "led-10mm";
+                }
+            }
+        });
+    }
+
+    function procesarBloqueSenales(dataSenales) {
+        if(!dataSenales) return;
+        estadoSenalesNunez = dataSenales;
+
+        Object.keys(dataSenales).forEach(function(clave) {
+            var idHtmlBase = clave.trim() + '_base';
+            var base = document.getElementById(idHtmlBase) || document.getElementById(clave.toLowerCase() + '_base');
+            if(base) {
+                var estado = Number(dataSenales[clave]);
+                base.classList.remove('f-rojo', 'f-verde', 'f-maniobra');
+                if(estado === 1) base.classList.add('f-verde');
+                else if(estado === 2) base.classList.add('f-maniobra');
+                else base.classList.add('f-rojo');
+            }
+        });
+    }
+
+    var panesGeneral = {
+    "RAMALLO":     { pos: 0, av: 1, idAlto: 'B_RAM_A', idBajo: 'B_RAM_B' },
+    "ZUFRIATEGUI": { pos: 0, av: 1, idAlto: 'B_ZUF_A', idBajo: 'B_ZUF_B' },
+    "LAPRIDA":     { pos: 0, av: 1, idAlto: 'B_LAP_A', idBajo: 'B_LAP_B' }
+};
+
+    db.ref('cabinas').on('value', function(snapshot) {
+        var cabinas = snapshot.val();
+        if(!snapshot.exists() || !cabinas) return;
+
+        var dataNuz = cabinas.nunez;
+        if (dataNuz && dataNuz.status) {
+            var led = document.getElementById('indicadorNunez');
+            if (led) {
+                led.className = Number(dataNuz.status.status) === 1 ? 'led-status led-on' : 'led-status led-off';
+            }
+
+            if (dataNuz.vias) {
+                Object.keys(dataNuz.vias).forEach(function(id) {
+                    var val = Number(dataNuz.vias[id]);
+                    var idL = id.toLowerCase().trim();
+                    var el = document.getElementById(id) || document.getElementById(idL) || document.getElementById("c" + idL);
+                    if (!el) {
+                        if (idL === "ca-nuñ" || idL === "ca-nun") el = document.getElementById("ca-Nuñ");
+                        if (idL === "cb-nuñ" || idL === "cb-nun") el = document.getElementById("cb-Nuñ");
+                        if (idL === "cy-nuñ" || idL === "cy-nun") el = document.getElementById("cy-Nuñ");
+                        if (idL === "cz-nuñ" || idL === "cz-nun") el = document.getElementById("cz-Nuñ");
+                    }
+                    if (el) {
+                        el.classList.remove('libre', 'ocupado', 'libresinI', 'libreconI', 'maniobra', 'libredeslizamiento');
+                        const estadosCss = { 0: 'libre', 1: 'ocupado', 2: 'libresinI', 4: 'maniobra', 5: 'libredeslizamiento' };
+                        el.classList.add(estadosCss[val] || 'libresinI');
+                    }
+                });
+               if(dataNuz.vias["w11pm"] !== undefined) w11_estado = dataNuz.vias["w11pm"];
+                if(dataNuz.vias["w10pm"] !== undefined) w10_estado = dataNuz.vias["w10pm"];
+                if(dataNuz.vias["w15pm"] !== undefined) w15_estado = dataNuz.vias["w15pm"];
+                else if(dataNuz.vias["15"] !== undefined) w15_estado = dataNuz.vias["15"];
+                if(dataNuz.vias["w12pm"] !== undefined) w12_estado = dataNuz.vias["w12pm"];
+                else if(dataNuz.vias["12"] !== undefined) w12_estado = dataNuz.vias["12"];
+            }
+
+            if (dataNuz.senales) procesarBloqueSenales(dataNuz.senales);
+
+            if (dataNuz.cambios) {
+                if (dataNuz.cambios.W1011 !== undefined) { let v = dataNuz.cambios.W1011.toString(); curW10 = v; curW11 = v; }
+                if (dataNuz.cambios.AW1011 !== undefined) flagAveria_Nuz1011 = parseInt(dataNuz.cambios.AW1011);
+                if (dataNuz.cambios.W1215 !== undefined) { let v = dataNuz.cambios.W1215.toString(); curW12 = v; curW15 = v; }
+                if (dataNuz.cambios.AW1215 !== undefined) flagAveria_Nuz1215 = parseInt(dataNuz.cambios.AW1215);
+                if (dataNuz.cambios.W124123 !== undefined) { let v = dataNuz.cambios.W124123.toString(); curW123 = v; curW124 = v; }
+                if (dataNuz.cambios.AW124123 !== undefined) flagAveria_Nuz124123 = parseInt(dataNuz.cambios.AW124123);
+            }
+           procesarEnclavamientosCambios(dataNuz.enclavamientos || dataNuz);
+        procesarDatosTrafico(dataNuz.trafico || dataNuz.datos_trafico, "N");
+        
+        // TRÁFICO RIVADAVIA (R.F / R.U)
+        var traficoRiv = dataNuz.trafico_rivadavia || (dataNuz.trafico ? dataNuz.trafico.rivadavia : null) || cabinas.trafico_rivadavia;
+        procesarDatosTrafico(traficoRiv, "R");
+
+        var datosPanesNuz = dataNuz.panes || dataNuz.pan || dataNuz.pasos_a_nivel || {};
+        Object.keys(datosPanesNuz).forEach(function(nombrePan) {
+            var infoPan = datosPanesNuz[nombrePan];
+            var keyUpper = nombrePan.toUpperCase();
+            if (panesGeneral[keyUpper] && infoPan) {
+                if (infoPan.ESTADO !== undefined) panesGeneral[keyUpper].pos = Number(infoPan.ESTADO);
+                else if (typeof infoPan === 'number' || typeof infoPan === 'string') panesGeneral[keyUpper].pos = Number(infoPan);
+                if (infoPan.AV !== undefined) panesGeneral[keyUpper].av = Number(infoPan.AV);
+            }
+        });
+    }
+
+    pW();
+});
+
+
+    function cerrarTodosLosMenus() {
+        document.getElementById('menuSiemensAguja').style.display = 'none';
+        document.getElementById('menuSiemensSenal').style.display = 'none';
+        document.getElementById('menuSiemensCD').style.display = 'none';
+        document.getElementById('menuSiemensManiobra').style.display = 'none';
+        ocultarCartelCD();
+    }
+
+    function mostrarCartelAdvertencia(posX, posY, texto) {
+        var cartel = document.getElementById('cartelBloqueoCD');
+        if (!cartel) return;
+        cartel.innerHTML = "🛑 " + texto;
+        cartel.style.left = (posX - 40) + 'px';
+        cartel.style.top = (posY - 35) + 'px';
+        cartel.style.display = 'block';
+        if (timerCartelCD) clearTimeout(timerCartelCD);
+        timerCartelCD = setTimeout(ocultarCartelCD, 3000);
+    }
+
+    function ocultarCartelCD() {
+        var cartel = document.getElementById('cartelBloqueoCD');
+        if (cartel) cartel.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.menu-siemens') && !e.target.closest('.nombre-cambio') && !e.target.closest('.led-enclav') && !e.target.closest('.senal-unificada')) {
+            cerrarTodosLosMenus();
+        }
+    });
+
+    function abrirMenuAguja(event, idAguja, posX, posY) {
+        if (event) event.stopPropagation();
+        cerrarTodosLosMenus();
+        if (estaCambioEnclavado()) {
+            mostrarCartelAdvertencia(posX, posY, "PROHIBIDO: CAMBIO ENCLAVADO");
+            return;
+        }
+        agujaSeleccionada = idAguja;
+        const menu = document.getElementById('menuSiemensAguja');
+        document.getElementById('headerAgujaSiemens').innerText = idAguja.toUpperCase();
+        menu.style.left = posX + 'px';
+        menu.style.top = posY + 'px';
+        menu.style.display = 'block';
+    }
+
+    function confirmarMoverAguja() {
+        if (!agujaSeleccionada) return;
+        var nuevoEstado = (curW10 == "1") ? 0 : 1;
+        var nombreCambioRef = agujaSeleccionada.includes('10') || agujaSeleccionada.includes('11') ? 'W1011' : (agujaSeleccionada.includes('12') || agujaSeleccionada.includes('15') ? 'W1215' : 'W124123');
+        var nombreAveriaRef = agujaSeleccionada.includes('10') || agujaSeleccionada.includes('11') ? 'AW1011' : (agujaSeleccionada.includes('12') || agujaSeleccionada.includes('15') ? 'AW1215' : 'AW124123');
+
+        var updates = {};
+        updates['cabinas/nunez/cambios/' + nombreAveriaRef] = 1;
+        db.ref().update(updates);
+
+        setTimeout(function() {
+            var updatesFinales = {};
+            updatesFinales['cabinas/nunez/cambios/' + nombreCambioRef] = nuevoEstado;
+            updatesFinales['cabinas/nunez/cambios/' + nombreAveriaRef] = 0;
+            db.ref().update(updatesFinales);
+        }, 10000);
+
+        cerrarTodosLosMenus();
+    }
+
+    // FUNCIÓN INTELIGENTE: SOLO MUEVE Y DEMORA SI LA POSICIÓN ACTUAL ES DISTINTA A LA REQUERIDA
+    function moverCambioConTiempoSiEsNecesario(nombreCambioRef, nombreAveriaRef, posicionActual, posicionRequerida, callback) {
+        if (posicionActual.toString() !== posicionRequerida.toString()) {
+            var updatesInicio = {};
+            updatesInicio['cabinas/nunez/cambios/' + nombreAveriaRef] = 1;
+            db.ref().update(updatesInicio);
+
+            setTimeout(function() {
+                var updatesFin = {};
+                updatesFin['cabinas/nunez/cambios/' + nombreCambioRef] = posicionRequerida;
+                updatesFin['cabinas/nunez/cambios/' + nombreAveriaRef] = 0;
+                db.ref().update(updatesFin).then(function() {
+                    if (callback) callback();
+                });
+            }, 11000); // 11 segundos de simulación de motor
+        } else {
+            if (callback) callback();
+        }
+    }
+
+    function abrirMenuCD(event, cdvId, posX, posY) {
+        if (event) event.stopPropagation();
+        cerrarTodosLosMenus();
+        cdvSeleccionado = cdvId;
+        const menu = document.getElementById('menuSiemensCD');
+        const contOpcionesCD = document.getElementById('contenedorOpcionesCD');
+        document.getElementById('headerCDSiemens').innerText = "CIRCULACIÓN DIRECTA - " + cdvId;
+
+        var estadoCdActual = (cdvId === 'CDV1') ? estadoCDV1 : estadoCDV2;
+
+        if (estadoCdActual === 1 || estadoCdActual === "1" || estadoCdActual === true) {
+            contOpcionesCD.innerHTML = `
+                <div class="menu-siemens-item" onclick="enviarOrdenCD(0)">Anular ${cdvId}</div>
+            `;
+        } else {
+            contOpcionesCD.innerHTML = `
+                <div class="menu-siemens-item" onclick="enviarOrdenCD(1)">Establecer ${cdvId}</div>
+            `;
+        }
+
+        menu.style.left = posX + 'px';
+        menu.style.top = posY + 'px';
+        menu.style.display = 'block';
+    }
+
+    function procesarEnclavamientosSenales(datosEnclav) {
+        if (!datosEnclav) datosEnclav = {};
+        var listaSenalesEnclav = [
+            { idHtml: "ESAN", claves: ["ESAN", "esan", "ES_AN", "sAN", "ES-AN"] },
+            { idHtml: "ESBN", claves: ["ESBN", "esbn", "ES_BN", "sBN", "ES-BN"] },
+            { idHtml: "ESYN", claves: ["ESYN", "esyn", "ES_YN", "sYN", "ES-YN"] },
+            { idHtml: "ESZN", claves: ["ESZN", "eszn", "ES_ZN", "sZN", "ES-ZN"] }
+        ];
+
+        listaSenalesEnclav.forEach(function(item) {
+            var enclavado = false;
+            item.claves.forEach(function(clave) {
+                if (datosEnclav[clave] == 1 || datosEnclav[clave] == "1" || datosEnclav[clave] === true) {
+                    enclavado = true;
+                }
+            });
+
+            var el = document.getElementById(item.idHtml);
+            if (el) {
+                if (enclavado) {
+                    el.style.backgroundColor = "#0000FF";
+                    el.style.borderColor = "#0000FF";
+                    el.style.boxShadow = "0 0 14px #0000FF";
+                } else {
+                    el.style.backgroundColor = "#ffffff";
+                    el.style.borderColor = "#777";
+                    el.style.boxShadow = "none";
+                }
+            }
+        });
+    }
+
+    function enviarOrdenCD(estado) {
+        if (!cdvSeleccionado) return;
+        db.ref('cabinas/nunez/trafico/' + cdvSeleccionado).set(estado);
+        cerrarTodosLosMenus();
+    }
+
+    function abrirMenuSenal(event, idSenal, viaAsociada, posX, posY) {
+        if (event) event.stopPropagation();
+        cerrarTodosLosMenus();
+
+        // REGLA: Si hay una ruta de maniobra armada, no permite mover ninguna señal absoluta (A, B, Z, Y)
+        if (hayManiobraActiva()) {
+            mostrarCartelAdvertencia(posX, posY, "PROHIBIDO: RUTA DE MANIOBRA ARMADA");
+            return;
+        }
+        
+        var cdActiva = false;
+        if (viaAsociada === 'CDV1' && estadoCDV1 === 1) cdActiva = true;
+        if (viaAsociada === 'CDV2' && estadoCDV2 === 1) cdActiva = true;
+
+        if (cdActiva) {
+            mostrarCartelAdvertencia(posX, posY, "PROHIBIDO: CIRCULACIÓN DIRECTA ACTIVA (" + viaAsociada + ")");
+            return;
+        }
+
+        senalSeleccionada = idSenal;
+        viaAsociadaSeleccionada = viaAsociada;
+
+        var idLimpio = idSenal.toUpperCase().replace('S', '').replace('-NUN', '').trim();
+        
+        var enclavadaRuta = false;
+        if (idLimpio === 'A' && Number(estadoEnclavamientosNunez["ESAN"] || 0) === 1) enclavadaRuta = true;
+        if (idLimpio === 'B' && Number(estadoEnclavamientosNunez["ESBN"] || 0) === 1) enclavadaRuta = true;
+        if (idLimpio === 'Z' && Number(estadoEnclavamientosNunez["ESZN"] || 0) === 1) enclavadaRuta = true;
+        if (idLimpio === 'Y' && Number(estadoEnclavamientosNunez["ESYN"] || 0) === 1) enclavadaRuta = true;
+
+        var estadoActualSenal = 0;
+        var posiblesClavesSenal = ["s" + idSenal, idSenal, "s" + idLimpio + "-NUN", idLimpio + "-NUN", "s" + idLimpio];
+        for (var i = 0; i < posiblesClavesSenal.length; i++) {
+            if (estadoSenalesNunez[posiblesClavesSenal[i]] !== undefined) {
+                estadoActualSenal = Number(estadoSenalesNunez[posiblesClavesSenal[i]]);
+                break;
+            }
+        }
+
+        const menu = document.getElementById('menuSiemensSenal');
+        const contOpciones = document.getElementById('contenedorOpcionesSenal');
+        document.getElementById('headerSenalSiemens').innerText = "SEÑAL " + idSenal;
+
+        if (enclavadaRuta) {
+            if (estadoActualSenal !== 0) {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="accionSiemensSenal('a_peligro')">Establecer señal a peligro</div>
+                `;
+            } else {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="accionSiemensSenal('cancelar_ruta')">Anular ruta</div>
+                `;
+            }
+        } else {
+            contOpciones.innerHTML = `
+                <div class="menu-siemens-item" onclick="accionSiemensSenal('establecer_ruta')">Establecer ruta</div>
+            `;
+        }
+
+        menu.style.left = (posX - 20) + 'px';
+        menu.style.top = (posY - 100) + 'px';
+        menu.style.display = 'block';
+    }
+
+    // ==========================================
+    // 1. RUTAS PRINCIPALES (A, B, Z, Y)
+    // ==========================================
+    function accionSiemensSenal(tipoAccion) {
+        if (!senalSeleccionada) return;
+
+        var idLimpio = senalSeleccionada.toUpperCase().replace('S', '').replace('-NUN', '').trim();
+
+        if (tipoAccion === 'establecer_ruta') {
+            if (idLimpio === 'FS1AN' || idLimpio === 'A') {
+                moverCambioConTiempoSiEsNecesario('W1011', 'AW1011', curW10, 1, function() {
+                    var updates = {};
+                    updates['cabinas/nunez/senales/sA-NUN'] = 1;
+                    updates['cabinas/nunez/senales/A-NUN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/ESAN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW10'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW11'] = 1;
+                    updates['cabinas/nunez/cambios/W1011'] = 1;
+                    updates['cabinas/nunez/vias/ca-nun'] = 0;
+                    updates['cabinas/nunez/vias/ca-nuñ'] = 0;
+                    updates['cabinas/nunez/vias/w10pm'] = 0;
+                    updates['cabinas/nunez/vias/10'] = 0;
+                    updates['cabinas/nunez/vias/w11pm'] = 0;
+                    updates['cabinas/nunez/vias/11'] = 0;
+                    
+                    curW10 = "1"; curW11 = "1";
+                    w10_estado = 0; w11_estado = 0;
+                    db.ref().update(updates);
+                });
+            } 
+            else if (idLimpio === 'FS1BN' || idLimpio === 'B') {
+                moverCambioConTiempoSiEsNecesario('W1215', 'AW1215', curW12, 1, function() {
+                    var updates = {};
+                    updates['cabinas/nunez/senales/sB-NUN'] = 1;
+                    updates['cabinas/nunez/senales/B-NUN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/ESBN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW12'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW15'] = 1;
+                    updates['cabinas/nunez/cambios/W1215'] = 1;
+                    updates['cabinas/nunez/vias/cb-nun'] = 0;
+                    updates['cabinas/nunez/vias/cb-nuñ'] = 0;
+                    updates['cabinas/nunez/vias/w15pm'] = 0;
+                    updates['cabinas/nunez/vias/15'] = 0;
+                    
+                    curW12 = "1"; curW15 = "1";
+                    w12_estado = 0; w15_estado = 0;
+                    db.ref().update(updates);
+                });
+            } 
+            else if (idLimpio === 'FS2ZN' || idLimpio === 'Z') {
+                moverCambioConTiempoSiEsNecesario('W1215', 'AW1215', curW12, 1, function() {
+                    var updates = {};
+                    updates['cabinas/nunez/senales/sZ-NUN'] = 1;
+                    updates['cabinas/nunez/senales/Z-NUN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/ESZN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW12'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW15'] = 1;
+                    updates['cabinas/nunez/cambios/W1215'] = 1;
+                    updates['cabinas/nunez/vias/cz-nun'] = 0;
+                    updates['cabinas/nunez/vias/cz-nuñ'] = 0;
+                    updates['cabinas/nunez/vias/w12pm'] = 0;
+                    updates['cabinas/nunez/vias/12'] = 0;
+                    
+                    curW12 = "1"; curW15 = "1";
+                    w12_estado = 0; w15_estado = 0;
+                    db.ref().update(updates);
+                });
+            } 
+            else if (idLimpio === 'FS2YN' || idLimpio === 'Y') {
+                moverCambioConTiempoSiEsNecesario('W1011', 'AW1011', curW10, 1, function() {
+                    var updates = {};
+                    updates['cabinas/nunez/senales/sY-NUN'] = 1;
+                    updates['cabinas/nunez/senales/Y-NUN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/ESYN'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW10'] = 1;
+                    updates['cabinas/nunez/enclavamientos/EW11'] = 1;
+                    updates['cabinas/nunez/cambios/W1011'] = 1;
+                    updates['cabinas/nunez/vias/cy-nun'] = 0;
+                    updates['cabinas/nunez/vias/cy-nuñ'] = 0;
+                    updates['cabinas/nunez/vias/w10pm'] = 0;
+                    updates['cabinas/nunez/vias/10'] = 0;
+                    
+                    curW10 = "1"; curW11 = "1";
+                    w10_estado = 0; w11_estado = 0;
+                    db.ref().update(updates);
+                });
+            }
+        } 
+        else if (tipoAccion === 'a_peligro') {
+            db.ref('cabinas/nunez/senales/s' + senalSeleccionada).set(0);
+            db.ref('cabinas/nunez/senales/' + senalSeleccionada).set(0);
+        } 
+        else if (tipoAccion === 'cancelar_ruta') {
+            var valorActual = 0;
+            var posiblesClaves = ["s" + senalSeleccionada, senalSeleccionada, "s" + idLimpio + "-NUN", idLimpio + "-NUN"];
+            for (var i = 0; i < posiblesClaves.length; i++) {
+                if (estadoSenalesNunez[posiblesClaves[i]] !== undefined) {
+                    valorActual = Number(estadoSenalesNunez[posiblesClaves[i]]);
+                    break;
+                }
+            }
+
+            if (valorActual !== 0) {
+                alert("AVISO: Para anular la ruta, la señal debe estar establecida primero a PELIGRO.");
+                cerrarTodosLosMenus();
+                return;
+            }
+
+            var updates = {};
+            if (idLimpio === 'FS1AN' || idLimpio === 'A') {
+                updates['cabinas/nunez/vias/w11pm'] = 2;
+                updates['cabinas/nunez/vias/11'] = 2;
+                updates['cabinas/nunez/vias/ca-nun'] = 2;
+                updates['cabinas/nunez/vias/ca-nuñ'] = 2;
+                updates['cabinas/nunez/enclavamientos/ESAN'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW10'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW11'] = 0;
+            } 
+            else if (idLimpio === 'FS1BN' || idLimpio === 'B') {
+                updates['cabinas/nunez/vias/w15pm'] = 2;
+                updates['cabinas/nunez/vias/15'] = 2;
+                updates['cabinas/nunez/vias/cb-nun'] = 2;
+                updates['cabinas/nunez/vias/cb-nuñ'] = 2;
+                updates['cabinas/nunez/enclavamientos/ESBN'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW12'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW15'] = 0;
+            } 
+            else if (idLimpio === 'FS2ZN' || idLimpio === 'Z') {
+                updates['cabinas/nunez/vias/w12pm'] = 2;
+                updates['cabinas/nunez/vias/12'] = 2;
+                updates['cabinas/nunez/vias/cz-nun'] = 2;
+                updates['cabinas/nunez/vias/cz-nuñ'] = 2;
+                updates['cabinas/nunez/enclavamientos/ESZN'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW12'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW15'] = 0;
+            } 
+            else if (idLimpio === 'FS2YN' || idLimpio === 'Y') {
+                updates['cabinas/nunez/vias/w10pm'] = 2;
+                updates['cabinas/nunez/vias/10'] = 2;
+                updates['cabinas/nunez/vias/cy-nun'] = 2;
+                updates['cabinas/nunez/vias/cy-nuñ'] = 2;
+                updates['cabinas/nunez/enclavamientos/ESYN'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW10'] = 0;
+                updates['cabinas/nunez/enclavamientos/EW11'] = 0;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                db.ref().update(updates);
+            }
+        }
+
+        cerrarTodosLosMenus();
+    }
+
+    // ==========================================
+    // 2. RUTAS DE MANIOBRA (10A, 13A, 17A, 12A)
+    // ==========================================
+    function autorizarManiobraFS10A_V1() {
+        var caVal = Number(estadoViasNunez["ca-nun"] || estadoViasNunez["ca-nuñ"] || 0);
+        var valCaDestino = (caVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1011', 'AW1011', curW10, 0, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s10A'] = 2;
+            updates['cabinas/nunez/senales/s10a'] = 2;
+            updates['cabinas/nunez/senales/10A'] = 2;
+
+            updates['cabinas/nunez/vias/w10pm'] = 4;
+            updates['cabinas/nunez/vias/10'] = 4;
+            updates['cabinas/nunez/vias/w11pm'] = 4;
+            updates['cabinas/nunez/vias/11'] = 4;
+            updates['cabinas/nunez/vias/ca-nun'] = valCaDestino;
+            updates['cabinas/nunez/vias/ca-nuñ'] = valCaDestino;
+
+            updates['cabinas/nunez/enclavamientos/EW10'] = 1;
+            updates['cabinas/nunez/cambios/W1011'] = 0;
+            curW10 = "0"; curW11 = "0";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+    }
+
+    function autorizarManiobraFS10A_V2() {
+        var czVal = Number(estadoViasNunez["cz-nun"] || estadoViasNunez["cz-nuñ"] || 0);
+        var valCzDestino = (czVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1011', 'AW1011', curW10, 1, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s10A'] = 2;
+            updates['cabinas/nunez/senales/s10a'] = 2;
+            updates['cabinas/nunez/senales/10A'] = 2;
+
+            updates['cabinas/nunez/vias/w10pm'] = 4;
+            updates['cabinas/nunez/vias/10'] = 4;
+            updates['cabinas/nunez/vias/w11pm'] = 2;
+            updates['cabinas/nunez/vias/11'] = 2;
+            updates['cabinas/nunez/vias/cz-nun'] = valCzDestino;
+            updates['cabinas/nunez/vias/cz-nuñ'] = valCzDestino;
+            updates['cabinas/nunez/enclavamientos/EW11'] = 1;
+            updates['cabinas/nunez/enclavamientos/EW10'] = 1;
+            updates['cabinas/nunez/cambios/W1011'] = 1;
+            curW10 = "1"; curW11 = "1";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+    }
+
+    function autorizarManiobraFS13A() {
+        var cyVal = Number(estadoViasNunez["cy-nun"] || estadoViasNunez["cy-nuñ"] || 0);
+        var valCyDestino = (cyVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1011', 'AW1011', curW11, 0, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s13A'] = 2;
+            updates['cabinas/nunez/senales/s13a'] = 2;
+            updates['cabinas/nunez/senales/13A'] = 2;
+
+            updates['cabinas/nunez/vias/w10pm'] = 4;
+            updates['cabinas/nunez/vias/10'] = 4;
+            updates['cabinas/nunez/vias/w11pm'] = 4;
+            updates['cabinas/nunez/vias/11'] = 4;
+            updates['cabinas/nunez/vias/cy-nun'] = valCyDestino;
+            updates['cabinas/nunez/vias/cy-nuñ'] = valCyDestino;
+            updates['cabinas/nunez/enclavamientos/EW11'] = 1;
+            updates['cabinas/nunez/enclavamientos/EW10'] = 1;
+            updates['cabinas/nunez/cambios/W1011'] = 0;
+            curW10 = "1"; curW11 = "1";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+
+    }
+
+    function autorizarManiobraFS17A_V1() {
+        var caVal = Number(estadoViasNunez["ca-nun"] || estadoViasNunez["ca-nuñ"] || 0);
+        var valCaDestino = (caVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1215', 'AW1215', curW12, 1, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s17A'] = 2;
+            updates['cabinas/nunez/senales/s17a'] = 2;
+            updates['cabinas/nunez/senales/17A'] = 2;
+
+            updates['cabinas/nunez/vias/w15pm'] = 4;
+            updates['cabinas/nunez/vias/15'] = 4;
+            updates['cabinas/nunez/vias/w12pm'] = 2;
+            updates['cabinas/nunez/vias/12'] = 2;
+            updates['cabinas/nunez/vias/ca-nun'] = valCaDestino;
+            updates['cabinas/nunez/vias/ca-nuñ'] = valCaDestino;
+
+            updates['cabinas/nunez/enclavamientos/EW12'] = 1;
+            updates['cabinas/nunez/cambios/W1215'] = 1;
+            curW12 = "1"; curW15 = "1";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+    }
+
+    function autorizarManiobraFS17A_V2() {
+        var czVal = Number(estadoViasNunez["cz-nun"] || estadoViasNunez["cz-nuñ"] || 0);
+        var valCzDestino = (czVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1215', 'AW1215', curW12, 0, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s17A'] = 2;
+            updates['cabinas/nunez/senales/s17a'] = 2;
+            updates['cabinas/nunez/senales/17A'] = 2;
+
+            updates['cabinas/nunez/vias/w15pm'] = 4;
+            updates['cabinas/nunez/vias/15'] = 4;
+            updates['cabinas/nunez/vias/w12pm'] = 4;
+            updates['cabinas/nunez/vias/12'] = 4;
+            updates['cabinas/nunez/vias/cz-nun'] = valCzDestino;
+            updates['cabinas/nunez/vias/cz-nuñ'] = valCzDestino;
+
+            updates['cabinas/nunez/enclavamientos/EW12'] = 1;
+            updates['cabinas/nunez/cambios/W1215'] = 0;
+            curW12 = "0"; curW15 = "0";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+    }
+
+    function autorizarManiobraFS12A() {
+        var cbVal = Number(estadoViasNunez["cb-nun"] || estadoViasNunez["cb-nuñ"] || 0);
+        var valCbDestino = (cbVal === 1) ? 1 : 5;
+
+        moverCambioConTiempoSiEsNecesario('W1215', 'AW1215', curW12, 0, function() {
+            var updates = {};
+            updates['cabinas/nunez/senales/s12A'] = 2;
+            updates['cabinas/nunez/senales/s12a'] = 2;
+            updates['cabinas/nunez/senales/12A'] = 2;
+
+            updates['cabinas/nunez/vias/w15pm'] = 4;
+            updates['cabinas/nunez/vias/15'] = 4;
+            updates['cabinas/nunez/vias/w12pm'] = 4;
+            updates['cabinas/nunez/vias/12'] = 4;
+            updates['cabinas/nunez/vias/cb-nun'] = valCbDestino;
+            updates['cabinas/nunez/vias/cb-nuñ'] = valCbDestino;
+
+            updates['cabinas/nunez/enclavamientos/EW12'] = 1;
+            updates['cabinas/nunez/cambios/W1215'] = 1;
+            curW12 = "0"; curW15 = "0";
+
+            db.ref().update(updates);
+        });
+        cerrarTodosLosMenus();
+    }
+
+    function cancelarManiobra(idEnana) {
+        var updates = {};
+        updates['cabinas/nunez/senales/s' + idEnana] = 0;
+        updates['cabinas/nunez/senales/s' + idEnana.toLowerCase()] = 0;
+        updates['cabinas/nunez/senales/' + idEnana] = 0;
+
+        if (idEnana.includes('10') || idEnana.includes('13')) {
+            updates['cabinas/nunez/enclavamientos/EW10'] = 0;
+            updates['cabinas/nunez/enclavamientos/EW11'] = 0;
+
+            updates['cabinas/nunez/vias/w10pm'] = 2;
+            updates['cabinas/nunez/vias/10'] = 2;
+            updates['cabinas/nunez/vias/w11pm'] = 2;
+            updates['cabinas/nunez/vias/11'] = 2;
+            updates['cabinas/nunez/vias/cy-nun'] = 2;
+            updates['cabinas/nunez/vias/cy-nuñ'] = 2;
+            updates['cabinas/nunez/vias/ca-nun'] = 2;
+            updates['cabinas/nunez/vias/ca-nuñ'] = 2;
+            updates['cabinas/nunez/vias/cz-nun'] = 2;
+            updates['cabinas/nunez/vias/cz-nuñ'] = 2;
+        } else if (idEnana.includes('17') || idEnana.includes('12')) {
+            updates['cabinas/nunez/enclavamientos/EW12'] = 0;
+            updates['cabinas/nunez/enclavamientos/EW15'] = 0;
+
+            updates['cabinas/nunez/vias/w15pm'] = 2;
+            updates['cabinas/nunez/vias/15'] = 2;
+            updates['cabinas/nunez/vias/w12pm'] = 2;
+            updates['cabinas/nunez/vias/12'] = 2;
+            updates['cabinas/nunez/vias/cz-nun'] = 2;
+            updates['cabinas/nunez/vias/cz-nuñ'] = 2;
+            updates['cabinas/nunez/vias/cb-nun'] = 2;
+            updates['cabinas/nunez/vias/cb-nuñ'] = 2;
+            updates['cabinas/nunez/vias/ca-nun'] = 2;
+            updates['cabinas/nunez/vias/ca-nuñ'] = 2;
+        }
+
+        db.ref().update(updates);
+        cerrarTodosLosMenus();
+    }
+
+    function abrirMenuManiobra(event, idEnana, posX, posY) {
+        if (event) event.stopPropagation();
+        cerrarTodosLosMenus();
+        enanaSeleccionada = idEnana;
+        const menu = document.getElementById('menuSiemensManiobra');
+        const contOpciones = document.getElementById('contenedorOpcionesManiobra');
+        document.getElementById('headerManiobraSiemens').innerText = "MANIOBRA " + idEnana;
+        
+        var hayRutaPrincipalArmada = (
+            Number(estadoEnclavamientosNunez["ESAN"] || 0) === 1 ||
+            Number(estadoEnclavamientosNunez["ESBN"] || 0) === 1 ||
+            Number(estadoEnclavamientosNunez["ESZN"] || 0) === 1 ||
+            Number(estadoEnclavamientosNunez["ESYN"] || 0) === 1
+        );
+
+        var otraManiobraActiva = false;
+        ['10A', '13A', '17A', '12A'].forEach(function(enana) {
+            var valEnana = Number(estadoSenalesNunez["s" + enana] || estadoSenalesNunez[enana] || estadoSenalesNunez["s" + enana.toLowerCase()] || 0);
+            if (valEnana === 2 && enana.toUpperCase() !== idEnana.toUpperCase()) {
+                otraManiobraActiva = true;
+            }
+        });
+
+        var estadoEnanaActual = Number(estadoSenalesNunez["s" + idEnana] || estadoSenalesNunez[idEnana] || estadoSenalesNunez["s" + idEnana.toLowerCase()] || 0);
+
+        // REGLA SOLICITADA PARA SEÑALES DE MANIOBRA:
+        // Si la misma señal de maniobra clickeada ya tiene su ruta trazada (estadoEnanaActual === 2), 
+        // el próximo paso obligatorio es mostrar únicamente "Anular ruta".
+        if (estadoEnanaActual === 2) {
+            contOpciones.innerHTML = `
+                <div class="menu-siemens-item" onclick="cancelarManiobra('${idEnana}')">Anular ruta</div>
+            `;
+        } else if (hayRutaPrincipalArmada) {
+            contOpciones.innerHTML = `<div class="menu-siemens-item deshabilitado">🛑 RUTA PRINCIPAL ARMADA</div>`;
+        } else if (otraManiobraActiva) {
+            contOpciones.innerHTML = `<div class="menu-siemens-item deshabilitado">🛑 YA HAY OTRA MANIOBRA ARMADA</div>`;
+        } else {
+            if (idEnana === '10A' || idEnana === '10a') {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS10A_V1()">Armar FS10A-V1 (10A ➔ B-NUN)</div>
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS10A_V2()">Armar FS10A-V2 (10A ➔ Y-NUN)</div>
+                `;
+            } else if (idEnana === '13A' || idEnana === '13a') {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS13A()">Armar FS13A (13A ➔ 10A)</div>
+                `;
+            } else if (idEnana === '17A' || idEnana === '17a') {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS17A_V1()">Armar FS17A-V1 (17A ➔ B-NUN)</div>
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS17A_V2()">Armar FS17A-V2 (17A ➔ 12A)</div>
+                `;
+            } else if (idEnana === '12A' || idEnana === '12a') {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="autorizarManiobraFS12A()">Armar FS12A (12A ➔ 17A)</div>
+                `;
+            } else {
+                contOpciones.innerHTML = `
+                    <div class="menu-siemens-item" onclick="db.ref('cabinas/nunez/senales/s' + enanaSeleccionada).set(2); cerrarTodosLosMenus();">Autorizar Maniobra</div>
+                `;
+            }
+        }
+
+        menu.style.left = (posX - 20) + 'px';
+        menu.style.top = (posY - 100) + 'px';
+        menu.style.display = 'block';
+    }
+
+    function anclarNombres() {
+        document.querySelectorAll('.via').forEach(via => {
+            if (!via.dataset.nombre) return;
+            const label = document.createElement('span');
+            label.className = 'nombre-via-label';
+            label.innerText = via.dataset.nombre;
+            const container = document.querySelector('.map-container');
+            label.style.left = (via.offsetLeft + (via.offsetWidth / 2)) + 'px';
+            label.style.transform = 'translateX(-50%)';
+            if (via.classList.contains('v-arriba')) {
+                label.style.top = (via.offsetTop - 15) + 'px';
+            } else {
+                label.style.top = (via.offsetTop + 12) + 'px';
+            }
+            container.appendChild(label);
+        });
+    }
+
+    window.addEventListener('load', anclarNombres);
+</script>
+</body>
+</html>
