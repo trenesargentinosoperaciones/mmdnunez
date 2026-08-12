@@ -1171,7 +1171,7 @@ function actualizarPAN(nombrePan) {
             updates['cabinas/nunez/vias/cb-nuñ'] = valCbDestino;
 
             updates['cabinas/nunez/enclavamientos/EW12'] = 1;
-            updates['cabinas/nunez/cambios/W1215'] = 1;
+            updates['cabinas/nunez/cambios/W1215'] = 0;
             curW12 = "0"; curW15 = "0";
 
             db.ref().update(updates);
